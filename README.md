@@ -10,20 +10,20 @@ The system is designed as a product for **multiple tenants/organizations**.
 * **Visibility:** A user can *only* view the tasks belonging to their specific organization.
 
 ### **Architecture Choice**
-To maintain strict data isolation and correctly identify the context of each request (ensuring the database schema is the right one), we selected the **`django-tenants`** package. This allows us to route requests based on the domain (e.g., `tenant-a.localhost`) directly to the correct PostgreSQL schema.
+To maintain strict data isolation and correctly identify the context of each request (ensuring the database schema is the right one), I selected the **`django-tenants`** package. This allows me to route requests based on the domain (e.g., `tenant-a.localhost`) directly to the correct PostgreSQL schema.
 
 ---
 
 ## 2. Authentication Strategy & Security (Crucial Design Decision)
 
 ### **The Vulnerability: JWT & Integer IDs**
-During the initial design using `SimpleJWT` and standard Integer IDs (`user_id`), we identified a critical vulnerability:
+During the initial design using `SimpleJWT` and standard Integer IDs (`user_id`), I identified a critical vulnerability:
 * **Scenario:** If User A has `id=2` in Tenant A, and a different User B has `id=2` in Tenant B.
 * **The Attack:** A malicious user could take a valid JWT token from Tenant A (containing `user_id: 2`) and send it to Tenant B's domain.
 * **Result:** The system would decode the token, see `user_id: 2`, and mistakenly authenticate the request as User B in Tenant B. This allowed cross-tenant impersonation.
 
 ### **Evaluated Solutions**
-We considered three approaches to fix this:
+I considered three approaches to fix this:
 
 1.  **Store `tenant_id` in Token Payload:**
     * *Pros:* Only one signing key; easy to implement.
@@ -33,10 +33,10 @@ We considered three approaches to fix this:
     * *Cons:* Enterprise-level complexity to manage and rotate keys for every new tenant.
 3.  **Use UUIDs (Selected Approach):**
     * *Pros:* Global uniqueness makes ID collisions impossible. An ID from Tenant A simply will not exist in Tenant B's database.
-    * *Optimization:* We specifically chose **UUIDv7**. It is time-based, ensuring that database indexing remains fast (unlike random UUIDv4).
+    * *Optimization:* I specifically chose **UUIDv7**. It is time-based, ensuring that database indexing remains fast (unlike random UUIDv4).
 
 ### **Final Decision**
-We implemented **UUIDv7** for all primary keys. This eliminates the IDOR (Insecure Direct Object Reference) vulnerability at the database level while maintaining high performance.
+I implemented **UUIDv7** for all primary keys. This eliminates the IDOR (Insecure Direct Object Reference) vulnerability at the database level while maintaining high performance.
 
 ---
 
@@ -54,7 +54,7 @@ The project uses **Schema-Based Multi-Tenancy** via the `django-tenants` library
     * Business logic is shared, but data is strictly siloed.
 
 ### **Background Processing Strategy**
-Instead of an asynchronous task queue (Celery), we implemented a **Database-Polling Pattern**:
+Instead of an asynchronous task queue (Celery), I implemented a **Database-Polling Pattern**:
 1.  **Queue:** A `ScheduledTask` table acts as the queue.
 2.  **Scheduler:** A system `cron` job runs every minute inside the container.
 3.  **Worker:** A custom Django Management Command (`process_tasks`) wakes up, iterates through every tenant schema, and processes tasks that are due.
