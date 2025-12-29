@@ -105,7 +105,12 @@ All endpoints (except Admin) must be accessed via a Tenant Domain (e.g., `http:/
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/api/v1/tasks/schedule/` | Schedule a task to run in the future. <br> **Body:** `{ "title": "...", "scheduled_time": "ISO-8601" }` | **Yes** |
+| **POST** | `/api/v1/tasks/schedule/` | Schedule a task to run in the future. <br> **Body:** `{
+    "title": "Fix the buggish",
+    "description": "Urgent production issue",
+    "status": "PENDING",
+    "scheduled_time":"2025-12-27 17:08:00"
+}` | **Yes** |
 
 ---
 
