@@ -1,0 +1,7 @@
+django>=5.0
+django-tenants
+djangorestframework
+djangorestframework-simplejwt
+psycopg2-binary
+django-crontab
+uuid6
