@@ -86,26 +86,26 @@ All endpoints (except Admin) must be accessed via a Tenant Domain (e.g., `http:/
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/api/register/` | Register a new user in the current tenant. | No |
-| **POST** | `/api/login/` | Obtain JWT Access & Refresh tokens. | No |
-| **POST** | `/api/token/refresh/` | Get a new Access token using a Refresh token. | No |
+| **POST** | `/api/v1/register` | Register a new user in the current tenant. | No |
+| **POST** | `/api/v1/login` | Obtain JWT Access & Refresh tokens. | No |
+| **POST** | `/api/v1/token/refresh` | Get a new Access token using a Refresh token. | No |
 
 ### **Task Management (Immediate)**
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| **GET** | `/api/tasks/` | List all tasks for the logged-in user's tenant. | **Yes** |
-| **POST** | `/api/tasks/` | Create a new task immediately. | **Yes** |
-| **GET** | `/api/tasks/<uuid>/` | Retrieve details of a specific task. | **Yes** |
-| **PUT** | `/api/tasks/<uuid>/` | Fully update a task (requires all fields). | **Yes** |
-| **PATCH** | `/api/tasks/<uuid>/` | Partially update a task (e.g., just status). | **Yes** |
-| **DELETE** | `/api/tasks/<uuid>/` | Delete a specific task. | **Yes** |
+| **GET** | `/api/v1/tasks` | List all tasks for the logged-in user's tenant. | **Yes** |
+| **POST** | `/api/v1/tasks` | Create a new task immediately. | **Yes** |
+| **GET** | `/api/v1/tasks/<uuid>` | Retrieve details of a specific task. | **Yes** |
+| **PUT** | `/api/v1/tasks/<uuid>` | Fully update a task (requires all fields). | **Yes** |
+| **PATCH** | `/api/v1/tasks/<uuid>` | Partially update a task (e.g., just status). | **Yes** |
+| **DELETE** | `/api/v1/tasks/<uuid>` | Delete a specific task. | **Yes** |
 
 ### **Background Jobs (Scheduled)**
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/api/tasks/schedule/` | Schedule a task to run in the future. <br> **Body:** `{ "title": "...", "scheduled_time": "ISO-8601" }` | **Yes** |
+| **POST** | `/api/v1/tasks/schedule/` | Schedule a task to run in the future. <br> **Body:** `{ "title": "...", "scheduled_time": "ISO-8601" }` | **Yes** |
 
 ---
 
