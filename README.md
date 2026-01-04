@@ -30,7 +30,6 @@ TaskFlow is a multi-tenant SaaS application that allows organizations to manage 
 - **Board Organization**: Organize tasks into boards
 - **Scheduled Tasks**: Schedule tasks for future execution with recurrence patterns
 - **Audit Logging**: Comprehensive audit trail for compliance and debugging
-- **Subscription Management**: Built-in subscription and billing system
 - **Email Domain Restriction**: Organization-specific email domain validation for signups
 
 ---
