@@ -4,4 +4,6 @@ djangorestframework
 djangorestframework-simplejwt
 psycopg2-binary
 django-crontab
-uuid6
+uuid
+python-dotenv
+python-dateutil

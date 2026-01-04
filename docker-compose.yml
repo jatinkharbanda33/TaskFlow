@@ -1,19 +1,23 @@
+version: '3.8'
+
 services:
+  # 1. Database
   db:
     image: postgres:16
     container_name: postgres_db
     restart: always
     environment:
-      POSTGRES_DB: tenant_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     command: >
       /bin/sh -c "ln -snf /usr/share/zoneinfo/Asia/Kolkata /usr/share/zoneinfo/Asia/Calcutta && docker-entrypoint.sh postgres"
-      
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+
+  # 2. Web Server
   web:
     build: .
     container_name: django_web
@@ -25,10 +29,12 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_HOST: db 
-      DATABASE_NAME: tenant_db
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: password
+      # Django connects directly to PostgreSQL
+      DATABASE_HOST: db
+      DATABASE_NAME: ${POSTGRES_DB}
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_PORT: 5432
 
 volumes:
   db_data:
