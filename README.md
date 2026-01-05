@@ -31,6 +31,7 @@ TaskFlow is a multi-tenant SaaS application that allows organizations to manage 
 - **Scheduled Tasks**: Schedule tasks for future execution with recurrence patterns
 - **Audit Logging**: Comprehensive audit trail for compliance and debugging
 - **Email Domain Restriction**: Organization-specific email domain validation for signups
+- **API Pagination**: Efficient pagination for all list endpoints with customizable page size
 
 ---
 
@@ -185,6 +186,49 @@ All endpoints (except organization creation) must be accessed via a Tenant Domai
   - Task Manager: `/api/v1/taskmanager/`
   - Organizations: `/api/v1/organization/`
 
+### Pagination
+
+All list endpoints support pagination using query parameters:
+
+- **Default Page Size**: 20 items per page
+- **Maximum Page Size**: 100 items per page
+- **Query Parameters**:
+  - `page` (integer): Page number (default: 1)
+  - `page_size` (integer): Number of items per page (default: 20, max: 100)
+
+**Pagination Response Format:**
+```json
+{
+  "count": 150,
+  "next": "http://localhost:8000/api/v1/taskmanager/tasks/?page=2",
+  "previous": null,
+  "results": [...]
+}
+```
+
+**Example Usage:**
+```bash
+# Get first page (default 20 items)
+GET /api/v1/taskmanager/tasks/
+
+# Get page 2
+GET /api/v1/taskmanager/tasks/?page=2
+
+# Custom page size (50 items per page)
+GET /api/v1/taskmanager/tasks/?page_size=50
+
+# Combine both
+GET /api/v1/taskmanager/tasks/?page=2&page_size=50
+```
+
+**Paginated Endpoints:**
+- `GET /api/v1/organization/subscription-plans/`
+- `GET /api/v1/accounts/users/`
+- `GET /api/v1/taskmanager/boards/`
+- `GET /api/v1/taskmanager/tasks/`
+- `GET /api/v1/taskmanager/scheduled-tasks/`
+- `GET /api/v1/taskmanager/audit-logs/`
+
 ### Authentication Endpoints (`/api/v1/accounts/`)
 
 | Method | Endpoint | Description | Auth Required |
@@ -229,6 +273,8 @@ All endpoints (except organization creation) must be accessed via a Tenant Domai
 - `board_id` (UUID): Filter by board
 - `status` (string): Filter by status (PENDING, IN_PROGRESS, COMPLETED, CANCELLED, ON_HOLD)
 - `priority` (string): Filter by priority (LOW, MEDIUM, HIGH, URGENT)
+- `page` (integer): Page number for pagination
+- `page_size` (integer): Number of items per page (max: 100)
 
 ### Scheduled Task Endpoints (`/api/v1/taskmanager/`)
 
@@ -240,6 +286,8 @@ All endpoints (except organization creation) must be accessed via a Tenant Domai
 
 **Query Parameters for `/scheduled-tasks/`:**
 - `processing_status` (integer): Filter by processing status (0=Pending, 1=Processed, 2=Failed)
+- `page` (integer): Page number for pagination
+- `page_size` (integer): Number of items per page (max: 100)
 
 ### Audit Log Endpoints (`/api/v1/taskmanager/`)
 
@@ -251,6 +299,8 @@ All endpoints (except organization creation) must be accessed via a Tenant Domai
 **Query Parameters for `/audit-logs/`:**
 - `action_type` (string): Filter by action type
 - `user_id` (UUID): Filter by user
+- `page` (integer): Page number for pagination
+- `page_size` (integer): Number of items per page (max: 100)
 
 ### Organization Endpoints (`/api/v1/organization/`)
 

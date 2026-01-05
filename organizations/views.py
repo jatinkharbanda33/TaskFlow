@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.pagination import PageNumberPagination
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -36,11 +37,17 @@ class SubscriptionPlanListView(APIView):
     def get(self, request):
         try:
             plans = SubscriptionPlan.objects.all().order_by("-created_at")
-            serializer = SubscriptionPlanListSerializer(plans, many=True)
-            return Response(
-                {"count": plans.count(), "results": serializer.data},
-                status=status.HTTP_200_OK,
-            )
+
+            # Apply pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 20
+            paginator.page_size_query_param = "page_size"
+            paginator.max_page_size = 100
+
+            paginated_plans = paginator.paginate_queryset(plans, request)
+            serializer = SubscriptionPlanListSerializer(paginated_plans, many=True)
+
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(
                 f"Failed to retrieve subscription plans: {str(e)}", exc_info=True

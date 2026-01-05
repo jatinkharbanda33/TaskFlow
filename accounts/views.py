@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -57,9 +58,7 @@ class LogoutView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to logout: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to logout: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to logout"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -101,9 +100,7 @@ class ChangePasswordView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to update password: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to update password: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to update password"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -120,9 +117,7 @@ class UserProfileView(APIView):
             serializer = UserProfileSerializer(request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
-            logger.error(
-                f"Failed to retrieve profile: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to retrieve profile: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to retrieve profile"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -145,9 +140,7 @@ class UserProfileView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to update profile: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to update profile: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to update profile"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -168,18 +161,24 @@ class UserListView(APIView):
                     {"error": "Organization context not available"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             # Filter users by organization
-            users = User.objects.filter(organization=organization).order_by("-date_joined")
-            serializer = UserListSerializer(users, many=True)
-            return Response(
-                {"count": users.count(), "results": serializer.data},
-                status=status.HTTP_200_OK,
+            users = User.objects.filter(organization=organization).order_by(
+                "-date_joined"
             )
+
+            # Apply pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 20
+            paginator.page_size_query_param = "page_size"
+            paginator.max_page_size = 100
+
+            paginated_users = paginator.paginate_queryset(users, request)
+            serializer = UserListSerializer(paginated_users, many=True)
+
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
-            logger.error(
-                f"Failed to retrieve users: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to retrieve users: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to retrieve users"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -200,7 +199,7 @@ class UserDetailView(APIView):
                     {"error": "Organization context not available"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             # Get user and ensure they belong to the same organization
             user = User.objects.get(user_id=user_id, organization=organization)
         except User.DoesNotExist:
@@ -208,9 +207,7 @@ class UserDetailView(APIView):
                 {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(
-                f"Failed to retrieve user: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to retrieve user: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to retrieve user"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -229,9 +226,7 @@ class UserDetailView(APIView):
             serializer = UserDetailSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
-            logger.error(
-                f"Failed to retrieve user: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to retrieve user: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to retrieve user"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -255,7 +250,7 @@ class UserDetailView(APIView):
                     {"error": "Organization context not available"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             # Get user and ensure they belong to the same organization
             user = User.objects.get(user_id=user_id, organization=organization)
         except User.DoesNotExist:
@@ -263,9 +258,7 @@ class UserDetailView(APIView):
                 {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(
-                f"Failed to retrieve user: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to retrieve user: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to retrieve user"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -285,9 +278,7 @@ class UserDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to update user: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to update user: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to update user"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -362,9 +353,7 @@ class UserCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to create user: {str(e)}", exc_info=True
-            )
+            logger.error(f"Failed to create user: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to create user"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

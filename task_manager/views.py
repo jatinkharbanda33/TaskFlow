@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
@@ -32,11 +33,17 @@ class BoardListView(APIView):
     def get(self, request):
         try:
             boards = Board.objects.all().order_by("name")
-            serializer = BoardListSerializer(boards, many=True)
-            return Response(
-                {"count": boards.count(), "results": serializer.data},
-                status=status.HTTP_200_OK,
-            )
+            
+            # Apply pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 20
+            paginator.page_size_query_param = "page_size"
+            paginator.max_page_size = 100
+            
+            paginated_boards = paginator.paginate_queryset(boards, request)
+            serializer = BoardListSerializer(paginated_boards, many=True)
+            
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve boards: {str(e)}", exc_info=True)
             return Response(
@@ -227,11 +234,17 @@ class TaskListView(APIView):
                     queryset = queryset.filter(priority=priority_filter)
 
             queryset = queryset.order_by("-created_at")
-            serializer = TaskListSerializer(queryset, many=True)
-            return Response(
-                {"count": queryset.count(), "results": serializer.data},
-                status=status.HTTP_200_OK,
-            )
+            
+            # Apply pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 20
+            paginator.page_size_query_param = "page_size"
+            paginator.max_page_size = 100
+            
+            paginated_tasks = paginator.paginate_queryset(queryset, request)
+            serializer = TaskListSerializer(paginated_tasks, many=True)
+            
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve tasks: {str(e)}", exc_info=True)
             return Response(
@@ -440,11 +453,16 @@ class ScheduledTaskListView(APIView):
                 except ValueError:
                     pass
 
-            serializer = ScheduledTaskListSerializer(queryset, many=True)
-            return Response(
-                {"count": queryset.count(), "results": serializer.data},
-                status=status.HTTP_200_OK,
-            )
+            # Apply pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 20
+            paginator.page_size_query_param = "page_size"
+            paginator.max_page_size = 100
+            
+            paginated_tasks = paginator.paginate_queryset(queryset, request)
+            serializer = ScheduledTaskListSerializer(paginated_tasks, many=True)
+            
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve scheduled tasks: {str(e)}", exc_info=True)
             return Response(
@@ -552,11 +570,17 @@ class AuditLogListView(APIView):
                 queryset = queryset.filter(user_id=user_id)
 
             queryset = queryset.order_by("-created_at")
-            serializer = AuditLogSerializer(queryset, many=True)
-            return Response(
-                {"count": queryset.count(), "results": serializer.data},
-                status=status.HTTP_200_OK,
-            )
+            
+            # Apply pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 20
+            paginator.page_size_query_param = "page_size"
+            paginator.max_page_size = 100
+            
+            paginated_logs = paginator.paginate_queryset(queryset, request)
+            serializer = AuditLogSerializer(paginated_logs, many=True)
+            
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve audit logs: {str(e)}", exc_info=True)
             return Response(
