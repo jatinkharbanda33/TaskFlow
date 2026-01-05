@@ -14,14 +14,20 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
+from .health import HealthCheckView
 
 api_version = "v1"
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path(f"api/{api_version}/taskmanager/", include('task_manager.urls')),
-    path(f"api/{api_version}/organization/", include('organizations.urls')),
-    path(f"api/{api_version}/accounts/", include('accounts.urls')), 
+    # Health check endpoints (no tenant routing required)
+    path("health/", HealthCheckView.as_view(), name="health"),
+    # Admin
+    path("admin/", admin.site.urls),
+    # API endpoints
+    path(f"api/{api_version}/taskmanager/", include("task_manager.urls")),
+    path(f"api/{api_version}/organization/", include("organizations.urls")),
+    path(f"api/{api_version}/accounts/", include("accounts.urls")),
 ]

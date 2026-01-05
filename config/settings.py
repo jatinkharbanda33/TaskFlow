@@ -25,8 +25,42 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-
 ALLOWED_HOSTS = [".localhost.com", "localhost.com", "localhost", "127.0.0.1"]
+
+# Security Headers Configuration
+# These settings are applied via SecurityMiddleware
+
+# HTTPS Settings (enable in production)
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # For reverse proxies
+
+# Cookie Security
+SESSION_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
+SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection
+
+CSRF_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Security Headers
+SECURE_BROWSER_XSS_FILTER = True  # Enable XSS filter in browser
+SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
+X_FRAME_OPTIONS = (
+    "DENY"  # Prevent clickjacking (already set via middleware, but explicit here)
+)
+
+# HSTS (HTTP Strict Transport Security) - only in production
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 year in production
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True if not DEBUG else False
+SECURE_HSTS_PRELOAD = True if not DEBUG else False
+
+# Referrer Policy
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# Request Size Limits (prevent DoS attacks)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000  # Maximum number of form fields
 
 
 SHARED_APPS = (
