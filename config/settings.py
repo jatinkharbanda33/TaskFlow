@@ -26,23 +26,21 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 
-ALLOWED_HOSTS = [".localhost.com", "localhost.com"]
-
-
+ALLOWED_HOSTS = [".localhost.com", "localhost.com", "localhost", "127.0.0.1"]
 
 
 SHARED_APPS = (
     "django_tenants",
     "organizations",
-    "accounts", 
+    "accounts",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.admin",
-    "django.contrib.auth", 
-    "rest_framework_simplejwt",  
-    "rest_framework_simplejwt.token_blacklist", 
+    "django.contrib.auth",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "django_crontab",
 )
 
@@ -50,8 +48,8 @@ TENANT_APPS = (
     "django.contrib.contenttypes",
     "django.contrib.messages",
     "django.contrib.admin",
-    "rest_framework", 
-    "task_manager",  
+    "rest_framework",
+    "task_manager",
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [
@@ -63,13 +61,13 @@ TENANT_DOMAIN_MODEL = "organizations.Domain"
 
 # Standard Middleware + Custom Checks
 MIDDLEWARE = [
-    "django_tenants.middleware.main.TenantMainMiddleware",  
+    "django_tenants.middleware.main.TenantMainMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware", 
-    "accounts.middleware.UserOrganizationMiddleware", 
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.UserOrganizationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -95,7 +93,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-
 
 
 DATABASES = {
