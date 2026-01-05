@@ -33,10 +33,10 @@ I considered three approaches to fix this:
     * *Cons:* Enterprise-level complexity to manage and rotate keys for every new tenant.
 3.  **Use UUIDs (Selected Approach):**
     * *Pros:* Global uniqueness makes ID collisions impossible. An ID from Tenant A simply will not exist in Tenant B's database.
-    * *Optimization:* I specifically chose **UUIDv7**. It is time-based, ensuring that database indexing remains fast (unlike random UUIDv4).
+    * *Optimization:* I specifically chose **UUID**. It is time-based, ensuring that database indexing remains fast (unlike random UUIDv4).
 
 ### **Final Decision**
-I implemented **UUIDv7** for all primary keys. This eliminates the IDOR (Insecure Direct Object Reference) vulnerability at the database level while maintaining high performance.
+I implemented **UUID** for all primary keys. This eliminates the IDOR (Insecure Direct Object Reference) vulnerability at the database level while maintaining high performance.
 
 ---
 
@@ -72,7 +72,7 @@ Instead of an asynchronous task queue (Celery), I implemented a **Database-Polli
 ### **Tenant Tables (Replicated in every Tenant Schema)**
 | Table | Fields | Description |
 | :--- | :--- | :--- |
-| **User** | **UUIDv7 (PK)**, Username, Password | Users are isolated per tenant. |
+| **User** | **UUID (PK)**, Username, Password | Users are isolated per tenant. |
 | **Task** | `title`, `description`, `status`, `created_by` | The active tasks visible in the dashboard. |
 | **ScheduledTask** | `title`, `scheduled_time`, `processing_status`, `failure_reason` | The "Waiting Room" for future tasks. Statuses: `0` (Pending), `1` (Success), `2` (Fail). |
 
