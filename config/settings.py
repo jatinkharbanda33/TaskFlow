@@ -26,7 +26,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [".localhost.com", "localhost.com"]
 
 
 
