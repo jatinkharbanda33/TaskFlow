@@ -1,3 +1,4 @@
+import logging
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -24,6 +25,7 @@ from .utils.helper import (
 )
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class SubscriptionPlanListView(APIView):
@@ -40,8 +42,11 @@ class SubscriptionPlanListView(APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
+            logger.error(
+                f"Failed to retrieve subscription plans: {str(e)}", exc_info=True
+            )
             return Response(
-                {"error": "Failed to retrieve subscription plans", "detail": str(e)},
+                {"error": "Failed to retrieve subscription plans"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -64,8 +69,11 @@ class SubscriptionPlanDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
+            logger.error(
+                f"Failed to retrieve subscription plan: {str(e)}", exc_info=True
+            )
             return Response(
-                {"error": "Failed to retrieve subscription plan", "detail": str(e)},
+                {"error": "Failed to retrieve subscription plan"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -118,7 +126,6 @@ class OrganizationCreateView(APIView):
                     data["business_name"], settings.BASE_DOMAIN
                 )
 
-                
                 organization = Organization.objects.create(
                     business_name=data["business_name"],
                     owner_email=data["owner_email"],
@@ -127,21 +134,18 @@ class OrganizationCreateView(APIView):
                     contact_number=data.get("contact_number", ""),
                     email_domain=data["email_domain"].lower().strip(),
                     subscription=subscription,
-                    schema_name=schema_name,  
+                    schema_name=schema_name,
                     is_active=True,
                 )
 
-               
                 Domain.objects.create(
                     domain=domain_name,
                     tenant=organization,
                     is_primary=True,
                 )
 
-               
                 owner_email = data["owner_email"].lower().strip()
                 try:
-                    
                     User.objects.create_user(
                         email=owner_email,
                         password=data["password"],
@@ -152,7 +156,7 @@ class OrganizationCreateView(APIView):
                         is_staff=True,
                         is_active=True,
                     )
-                except IntegrityError:
+                except IntegrityError as e:
                     return Response(
                         {
                             "error": "User account creation failed",
@@ -163,7 +167,7 @@ class OrganizationCreateView(APIView):
 
             response_serializer = OrganizationSerializer(organization)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-        except IntegrityError:
+        except IntegrityError as e:
             return Response(
                 {
                     "error": "Failed to create organization",
@@ -172,8 +176,9 @@ class OrganizationCreateView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
         except Exception as e:
+            logger.error(f"Failed to create organization: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to create organization", "detail": str(e)},
+                {"error": "Failed to create organization"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -193,14 +198,15 @@ class OrganizationDetailView(APIView):
                 )
             serializer = OrganizationSerializer(organization)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except AttributeError:
+        except AttributeError as e:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve organization: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve organization", "detail": str(e)},
+                {"error": "Failed to retrieve organization"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -229,7 +235,7 @@ class OrganizationDetailView(APIView):
                 response_serializer = OrganizationSerializer(updated_organization)
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except AttributeError:
+        except AttributeError as e:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -240,8 +246,9 @@ class OrganizationDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to update organization: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to update organization", "detail": str(e)},
+                {"error": "Failed to update organization"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -263,14 +270,15 @@ class OrganizationSubscriptionView(APIView):
 
             serializer = SubscriptionSerializer(organization.subscription)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except AttributeError:
+        except AttributeError as e:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve subscription: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve subscription", "detail": str(e)},
+                {"error": "Failed to retrieve subscription"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -327,14 +335,15 @@ class OrganizationSubscriptionView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-        except AttributeError:
+        except AttributeError as e:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to update subscription: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to update subscription", "detail": str(e)},
+                {"error": "Failed to update subscription"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -370,13 +379,16 @@ class OrganizationSubscriptionStatusView(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-        except AttributeError:
+        except AttributeError as e:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(
+                f"Failed to retrieve subscription status: {str(e)}", exc_info=True
+            )
             return Response(
-                {"error": "Failed to retrieve subscription status", "detail": str(e)},
+                {"error": "Failed to retrieve subscription status"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

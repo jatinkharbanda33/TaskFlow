@@ -1,3 +1,4 @@
+import logging
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,6 +21,8 @@ from .serializers import (
 from accounts.permissions import IsOrganizationAdminOrOwner
 from .utils.helpers import create_audit_log
 
+logger = logging.getLogger(__name__)
+
 
 class BoardListView(APIView):
     """List all boards. Authenticated users can view."""
@@ -35,8 +38,9 @@ class BoardListView(APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve boards: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve boards", "detail": str(e)},
+                {"error": "Failed to retrieve boards"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -74,8 +78,9 @@ class BoardCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to create board: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to create board", "detail": str(e)},
+                {"error": "Failed to create board"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -95,8 +100,9 @@ class BoardDetailView(APIView):
                 {"error": "Board not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve board: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve board", "detail": str(e)},
+                {"error": "Failed to retrieve board"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -140,8 +146,9 @@ class BoardDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to update board: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to update board", "detail": str(e)},
+                {"error": "Failed to update board"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -177,8 +184,9 @@ class BoardDetailView(APIView):
                 {"message": "Board deleted successfully"}, status=status.HTTP_200_OK
             )
         except Exception as e:
+            logger.error(f"Failed to delete board: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to delete board", "detail": str(e)},
+                {"error": "Failed to delete board"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -225,8 +233,9 @@ class TaskListView(APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve tasks: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve tasks", "detail": str(e)},
+                {"error": "Failed to retrieve tasks"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -268,8 +277,9 @@ class TaskCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to create task: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to create task", "detail": str(e)},
+                {"error": "Failed to create task"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -289,8 +299,9 @@ class TaskDetailView(APIView):
                 {"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve task: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve task", "detail": str(e)},
+                {"error": "Failed to retrieve task"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -352,8 +363,9 @@ class TaskDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to update task: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to update task", "detail": str(e)},
+                {"error": "Failed to update task"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -396,8 +408,9 @@ class TaskDetailView(APIView):
                 {"message": "Task deleted successfully"}, status=status.HTTP_200_OK
             )
         except Exception as e:
+            logger.error(f"Failed to delete task: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to delete task", "detail": str(e)},
+                {"error": "Failed to delete task"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -433,8 +446,9 @@ class ScheduledTaskListView(APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve scheduled tasks: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve scheduled tasks", "detail": str(e)},
+                {"error": "Failed to retrieve scheduled tasks"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -476,8 +490,9 @@ class ScheduledTaskCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
+            logger.error(f"Failed to create scheduled task: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to create scheduled task", "detail": str(e)},
+                {"error": "Failed to create scheduled task"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -508,8 +523,9 @@ class ScheduledTaskDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve scheduled task: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve scheduled task", "detail": str(e)},
+                {"error": "Failed to retrieve scheduled task"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -542,8 +558,9 @@ class AuditLogListView(APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve audit logs: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve audit logs", "detail": str(e)},
+                {"error": "Failed to retrieve audit logs"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -563,7 +580,8 @@ class AuditLogDetailView(APIView):
                 {"error": "Audit log not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
+            logger.error(f"Failed to retrieve audit log: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Failed to retrieve audit log", "detail": str(e)},
+                {"error": "Failed to retrieve audit log"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
