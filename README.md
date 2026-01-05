@@ -176,7 +176,7 @@ Instead of an asynchronous task queue (Celery), we implemented a **Database-Poll
 
 ## API Endpoints
 
-All endpoints (except organization creation) must be accessed via a Tenant Domain (e.g., `http://tenant-a.localhost:8000/api/v1/...`).
+All endpoints (except the public views) must be accessed via a Tenant Domain (e.g., `http://tenant-a.localhost:8000/api/v1/...`).
 
 ### Base URL Structure
 - **API Version**: `v1`
@@ -200,7 +200,7 @@ All list endpoints support pagination using query parameters:
 ```json
 {
   "count": 150,
-  "next": "http://localhost:8000/api/v1/taskmanager/tasks/?page=2",
+  "next": "http://abc.localhost:8000/api/v1/taskmanager/tasks/?page=2",
   "previous": null,
   "results": [...]
 }
