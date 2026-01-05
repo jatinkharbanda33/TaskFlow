@@ -30,7 +30,6 @@ TaskFlow is a multi-tenant SaaS application that allows organizations to manage 
 - **Board Organization**: Organize tasks into boards
 - **Scheduled Tasks**: Schedule tasks for future execution with recurrence patterns
 - **Audit Logging**: Comprehensive audit trail for compliance and debugging
-- **Subscription Management**: Built-in subscription and billing system
 - **Email Domain Restriction**: Organization-specific email domain validation for signups
 
 ---
@@ -259,7 +258,7 @@ All endpoints (except organization creation) must be accessed via a Tenant Domai
 | :--- | :--- | :--- | :--- | :--- |
 | **GET** | `/subscription-plans/` | List all subscription plans | No | Public |
 | **GET** | `/subscription-plans/<uuid:subscription_plan_id>/` | Get subscription plan details | No | Public |
-| **POST** | `/organizations/` | Create new organization (public signup) | No | Public |
+| **POST** | `/organization/create/` | Create new organization (public signup) | No | Public |
 | **GET** | `/organization/` | Get current organization details | Yes | Admin/Owner |
 | **PATCH** | `/organization/` | Update organization details | Yes | Owner only |
 | **GET** | `/organization/subscription/` | Get organization subscription | Yes | Admin/Owner |
