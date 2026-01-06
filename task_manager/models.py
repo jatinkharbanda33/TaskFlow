@@ -85,7 +85,6 @@ class Task(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["board", "status", "-created_at"]),
-            models.Index(fields=["status", "-created_at"]),
             models.Index(fields=["priority", "due_date"]),
             models.Index(fields=["created_by", "status"]),
             models.Index(fields=["status", "priority"]),
@@ -128,16 +127,6 @@ class ScheduledTask(models.Model):
         PENDING = 0, "Pending"
         PROCESSED = 1, "Processed"
         FAILED = 2, "Failed"
-
-    class RecurrencePattern(models.TextChoices):
-        ONCE = "ONCE", "Once"
-        DAILY = "DAILY", "Daily"
-        WEEKLY = "WEEKLY", "Weekly"
-        MONTHLY = "MONTHLY", "Monthly"
-
-    scheduled_task_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False, db_index=True
-    )
 
     # Core Fields
     title = models.CharField(
@@ -200,13 +189,6 @@ class ScheduledTask(models.Model):
     # Scheduling
     scheduled_time = models.DateTimeField(
         db_index=True, help_text="When this task should be processed"
-    )
-    recurrence_pattern = models.CharField(
-        max_length=50,
-        choices=RecurrencePattern.choices,
-        default=RecurrencePattern.ONCE,
-        db_index=True,
-        help_text="How often this task should recur",
     )
 
     # Processing
@@ -350,4 +332,33 @@ class AuditLog(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.get_action_type_display()} - {self.created_at}"
+        return f"{self.action_type} - {self.created_at}"
+
+
+class DailyStats(models.Model):
+    """
+    Daily aggregated statistics for each organization.
+    Stores pre-calculated metrics to enable fast analytics and reporting.
+    """
+
+    daily_stats_id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, db_index=True
+    )
+
+    date = models.DateField(
+        db_index=True, help_text="Date for which stats are aggregated"
+    )
+
+    tasks_created = models.IntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date"]
+        indexes = [
+            models.Index(fields=["date"]),
+        ]
+
+    def __str__(self):
+        return f"Daily Stats - {self.date}"

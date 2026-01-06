@@ -132,7 +132,7 @@ class OrganizationCreateView(APIView):
                 domain_name = generate_domain_name(
                     data["business_name"], settings.BASE_DOMAIN
                 )
-
+                
                 organization = Organization.objects.create(
                     business_name=data["business_name"],
                     owner_email=data["owner_email"],
@@ -141,16 +141,16 @@ class OrganizationCreateView(APIView):
                     contact_number=data.get("contact_number", ""),
                     email_domain=data["email_domain"].lower().strip(),
                     subscription=subscription,
-                    schema_name=schema_name,
+                    schema_name=schema_name,  
                     is_active=True,
                 )
-
+               
                 Domain.objects.create(
                     domain=domain_name,
                     tenant=organization,
                     is_primary=True,
                 )
-
+               
                 owner_email = data["owner_email"].lower().strip()
                 try:
                     User.objects.create_user(
@@ -163,7 +163,7 @@ class OrganizationCreateView(APIView):
                         is_staff=True,
                         is_active=True,
                     )
-                except IntegrityError as e:
+                except IntegrityError:
                     return Response(
                         {
                             "error": "User account creation failed",
@@ -174,7 +174,7 @@ class OrganizationCreateView(APIView):
 
             response_serializer = OrganizationSerializer(organization)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-        except IntegrityError as e:
+        except IntegrityError:
             return Response(
                 {
                     "error": "Failed to create organization",
@@ -205,7 +205,7 @@ class OrganizationDetailView(APIView):
                 )
             serializer = OrganizationSerializer(organization)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except AttributeError as e:
+        except AttributeError:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -242,7 +242,7 @@ class OrganizationDetailView(APIView):
                 response_serializer = OrganizationSerializer(updated_organization)
                 return Response(response_serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except AttributeError as e:
+        except AttributeError:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -277,7 +277,7 @@ class OrganizationSubscriptionView(APIView):
 
             serializer = SubscriptionSerializer(organization.subscription)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except AttributeError as e:
+        except AttributeError:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -342,7 +342,7 @@ class OrganizationSubscriptionView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-        except AttributeError as e:
+        except AttributeError:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -386,7 +386,7 @@ class OrganizationSubscriptionStatusView(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-        except AttributeError as e:
+        except AttributeError:
             return Response(
                 {"error": "Organization context not available"},
                 status=status.HTTP_400_BAD_REQUEST,

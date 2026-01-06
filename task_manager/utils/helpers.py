@@ -3,7 +3,9 @@ Helper functions for task_manager app.
 """
 
 import logging
-from ..models import AuditLog
+from django.db.models import F
+from django.utils import timezone
+from ..models import AuditLog, DailyStats
 
 logger = logging.getLogger(__name__)
 
@@ -90,3 +92,27 @@ def create_audit_log(user, action_type, description, request=None, metadata=None
             exc_info=True,
         )
         return None
+
+
+def increment_daily_stat(stat_field):
+    """
+    Atomically increment a daily statistics counter for today.
+
+    This function safely updates daily stats and handles errors gracefully.
+    Stats updates should never break the main operation.
+
+    Args:
+        stat_field: Field name to increment (e.g., 'tasks_created', 'tasks_updated')
+
+    Returns:
+        None (fails silently on error)
+    """
+    try:
+        today = timezone.now().date()
+        DailyStats.objects.update_or_create(date=today, defaults={stat_field: 0})
+        DailyStats.objects.filter(date=today).update(**{stat_field: F(stat_field) + 1})
+    except Exception as e:
+        logger.error(
+            f"Failed to increment daily stat '{stat_field}': {str(e)}",
+            exc_info=True,
+        )

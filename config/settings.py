@@ -25,42 +25,17 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = [".localhost.com", "localhost.com", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS", ".localhost.com,localhost.com,localhost,127.0.0.1"
+).split(",")
 
-# Security Headers Configuration
-# These settings are applied via SecurityMiddleware
+# Basic Security Settings
+X_FRAME_OPTIONS = "DENY"
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# HTTPS Settings (enable in production)
-SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # For reverse proxies
-
-# Cookie Security
-SESSION_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
-SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection
-
-CSRF_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
-CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = "Lax"
-
-# Security Headers
-SECURE_BROWSER_XSS_FILTER = True  # Enable XSS filter in browser
-SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
-X_FRAME_OPTIONS = (
-    "DENY"  # Prevent clickjacking (already set via middleware, but explicit here)
-)
-
-# HSTS (HTTP Strict Transport Security) - only in production
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 year in production
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True if not DEBUG else False
-SECURE_HSTS_PRELOAD = True if not DEBUG else False
-
-# Referrer Policy
-SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-
-# Request Size Limits (prevent DoS attacks)
+# Request Size Limits
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000  # Maximum number of form fields
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 
 
 SHARED_APPS = (
@@ -99,7 +74,6 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "accounts.middleware.UserOrganizationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -139,7 +113,7 @@ DATABASES = {
         "PORT": os.getenv("DATABASE_PORT", "5432"),
         "CONN_MAX_AGE": 0,
         "OPTIONS": {
-            "options": "-c timezone=Asia/Kolkata",  # Set PostgreSQL timezone to IST
+            "options": f"-c timezone={os.getenv('DATABASE_TIMEZONE', 'Asia/Kolkata')}",
         },
     }
 }
@@ -167,7 +141,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "Asia/Kolkata"  # Indian Standard Time (IST)
+TIME_ZONE = os.getenv("TIME_ZONE", "Asia/Kolkata")
 
 USE_I18N = True
 
@@ -188,13 +162,13 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "10/minute",
-        "user": "100/minute",
+        "anon": os.getenv("THROTTLE_ANON_RATE", "10/minute"),
+        "user": os.getenv("THROTTLE_USER_RATE", "100/minute"),
     },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
-    "PAGE_SIZE_QUERY_PARAM": "page_size",
-    "MAX_PAGE_SIZE": 100,
+    "PAGE_SIZE": int(os.getenv("PAGE_SIZE", "20")),
+    "PAGE_SIZE_QUERY_PARAM": os.getenv("PAGE_SIZE_QUERY_PARAM", "page_size"),
+    "MAX_PAGE_SIZE": int(os.getenv("MAX_PAGE_SIZE", "100")),
 }
 
 SIMPLE_JWT = {

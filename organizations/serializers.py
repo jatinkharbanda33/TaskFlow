@@ -314,10 +314,6 @@ class OrganizationCreateSerializer(serializers.Serializer):
         choices=[("MONTHLY", "Monthly"), ("YEARLY", "Yearly")]
     )
     end_date = serializers.DateField()
-    next_payment_date = serializers.DateField(
-        required=False,
-        help_text="If not provided, will be calculated based on billing_cycle and current date",
-    )
     stripe_id = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
     def validate_business_name(self, value):
@@ -329,6 +325,11 @@ class OrganizationCreateSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("Owner email is required.")
         return value.lower().strip()
+
+    def validate_billing_address(self, value):
+        if not value:
+            raise serializers.ValidationError("Billing address is required.")
+        return value
 
     def validate_billing_email(self, value):
         if not value:

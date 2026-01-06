@@ -37,4 +37,6 @@ urlpatterns = [
         views.AuditLogDetailView.as_view(),
         name="audit-log-detail",
     ),
+    # Daily Stats (Admin/Owner only)
+    path("daily-stats/", views.DailyStatsView.as_view(), name="daily-stats"),
 ]

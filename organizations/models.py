@@ -1,6 +1,5 @@
 from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
-from django.utils import timezone
 import uuid  # Requires: pip install uuid6
 
 
@@ -122,7 +121,7 @@ class Organization(TenantMixin):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["is_active", "created_at"]),
+            models.Index(fields=["is_active", "business_name"]),
             models.Index(fields=["owner_email", "is_active"]),
         ]
 

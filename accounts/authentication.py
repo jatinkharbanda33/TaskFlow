@@ -3,6 +3,9 @@ from rest_framework_simplejwt.authentication import (
 )
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class JWTAuthentication(BaseJWTAuthentication):
@@ -19,10 +22,12 @@ class JWTAuthentication(BaseJWTAuthentication):
         Override to get request for organization validation.
         """
         header = self.get_header(request)
+        # If auth header not present, we can't authenticate
         if header is None:
             return None
 
         raw_token = self.get_raw_token(header)
+        # If auth token not present, we can't authenticate
         if raw_token is None:
             return None
 
@@ -31,7 +36,7 @@ class JWTAuthentication(BaseJWTAuthentication):
 
         # Validate user belongs to current organization
         tenant = getattr(request, "tenant", None)
-        if tenant and user.organization_id != tenant.organization_id:
+        if tenant and user.organization != tenant:
             raise AuthenticationFailed(
                 _("User does not belong to this organization."),
                 code="organization_mismatch",
@@ -52,11 +57,6 @@ class JWTAuthentication(BaseJWTAuthentication):
             raise AuthenticationFailed(
                 _("Invalid token. No user_id found."), code="invalid_token"
             )
-
-        # Get user from shared schema (public schema)
-        from django.contrib.auth import get_user_model
-
-        User = get_user_model()
 
         try:
             # Users are in public schema, so we query directly

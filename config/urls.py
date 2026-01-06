@@ -25,7 +25,7 @@ urlpatterns = [
     # Health check endpoints (no tenant routing required)
     path("health/", HealthCheckView.as_view(), name="health"),
     # Admin
-    path("admin/", admin.site.urls),
+    path("admincontrol/admin/", admin.site.urls),
     # API endpoints
     path(f"api/{api_version}/taskmanager/", include("task_manager.urls")),
     path(f"api/{api_version}/organization/", include("organizations.urls")),

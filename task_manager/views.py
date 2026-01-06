@@ -7,7 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from .models import Task, Board, ScheduledTask, AuditLog
+from .models import Task, Board, ScheduledTask, AuditLog, DailyStats
 from .serializers import (
     BoardSerializer,
     BoardListSerializer,
@@ -18,9 +18,10 @@ from .serializers import (
     ScheduledTaskSerializer,
     ScheduledTaskListSerializer,
     AuditLogSerializer,
+    DailyStatsSerializer,
 )
 from accounts.permissions import IsOrganizationAdminOrOwner
-from .utils.helpers import create_audit_log
+from .utils.helpers import create_audit_log, increment_daily_stat
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +34,16 @@ class BoardListView(APIView):
     def get(self, request):
         try:
             boards = Board.objects.all().order_by("name")
-            
+
             # Apply pagination
             paginator = PageNumberPagination()
             paginator.page_size = 20
             paginator.page_size_query_param = "page_size"
             paginator.max_page_size = 100
-            
+
             paginated_boards = paginator.paginate_queryset(boards, request)
             serializer = BoardListSerializer(paginated_boards, many=True)
-            
+
             return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve boards: {str(e)}", exc_info=True)
@@ -63,7 +64,6 @@ class BoardCreateView(APIView):
             if serializer.is_valid():
                 with transaction.atomic():
                     board = serializer.save(created_by=request.user)
-                    # Create audit log
                     create_audit_log(
                         user=request.user,
                         action_type=AuditLog.ActionType.BOARD_CREATED,
@@ -133,7 +133,6 @@ class BoardDetailView(APIView):
             if serializer.is_valid():
                 with transaction.atomic():
                     updated_board = serializer.save()
-                    # Create audit log
                     create_audit_log(
                         user=request.user,
                         action_type=AuditLog.ActionType.BOARD_UPDATED,
@@ -179,7 +178,6 @@ class BoardDetailView(APIView):
             board_id = str(board.board_id)
             with transaction.atomic():
                 board.delete()
-                # Create audit log
                 create_audit_log(
                     user=request.user,
                     action_type=AuditLog.ActionType.BOARD_DELETED,
@@ -234,16 +232,16 @@ class TaskListView(APIView):
                     queryset = queryset.filter(priority=priority_filter)
 
             queryset = queryset.order_by("-created_at")
-            
+
             # Apply pagination
             paginator = PageNumberPagination()
             paginator.page_size = 20
             paginator.page_size_query_param = "page_size"
             paginator.max_page_size = 100
-            
+
             paginated_tasks = paginator.paginate_queryset(queryset, request)
             serializer = TaskListSerializer(paginated_tasks, many=True)
-            
+
             return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve tasks: {str(e)}", exc_info=True)
@@ -264,7 +262,6 @@ class TaskCreateView(APIView):
             if serializer.is_valid():
                 with transaction.atomic():
                     task = serializer.save()
-                    # Create audit log
                     create_audit_log(
                         user=request.user,
                         action_type=AuditLog.ActionType.TASK_CREATED,
@@ -279,6 +276,7 @@ class TaskCreateView(APIView):
                             "priority": task.priority,
                         },
                     )
+                    increment_daily_stat("tasks_created")
                 response_serializer = TaskDetailSerializer(task)
                 return Response(
                     response_serializer.data, status=status.HTTP_201_CREATED
@@ -341,11 +339,9 @@ class TaskDetailView(APIView):
             if serializer.is_valid():
                 with transaction.atomic():
                     updated_task = serializer.save()
-                    # Create audit log
                     action_type = AuditLog.ActionType.TASK_UPDATED
                     description = f"Task '{updated_task.title}' updated"
 
-                    # Check if status changed to COMPLETED
                     if (
                         updated_task.status == Task.Status.COMPLETED
                         and old_status != Task.Status.COMPLETED
@@ -404,7 +400,6 @@ class TaskDetailView(APIView):
             board_id = str(task.board.board_id)
             with transaction.atomic():
                 task.delete()
-                # Create audit log
                 create_audit_log(
                     user=request.user,
                     action_type=AuditLog.ActionType.TASK_DELETED,
@@ -458,10 +453,10 @@ class ScheduledTaskListView(APIView):
             paginator.page_size = 20
             paginator.page_size_query_param = "page_size"
             paginator.max_page_size = 100
-            
+
             paginated_tasks = paginator.paginate_queryset(queryset, request)
             serializer = ScheduledTaskListSerializer(paginated_tasks, many=True)
-            
+
             return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve scheduled tasks: {str(e)}", exc_info=True)
@@ -484,7 +479,6 @@ class ScheduledTaskCreateView(APIView):
             if serializer.is_valid():
                 with transaction.atomic():
                     scheduled_task = serializer.save()
-                    # Create audit log
                     create_audit_log(
                         user=request.user,
                         action_type=AuditLog.ActionType.SCHEDULED_TASK_CREATED,
@@ -570,16 +564,16 @@ class AuditLogListView(APIView):
                 queryset = queryset.filter(user_id=user_id)
 
             queryset = queryset.order_by("-created_at")
-            
+
             # Apply pagination
             paginator = PageNumberPagination()
             paginator.page_size = 20
             paginator.page_size_query_param = "page_size"
             paginator.max_page_size = 100
-            
+
             paginated_logs = paginator.paginate_queryset(queryset, request)
             serializer = AuditLogSerializer(paginated_logs, many=True)
-            
+
             return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to retrieve audit logs: {str(e)}", exc_info=True)
@@ -607,5 +601,47 @@ class AuditLogDetailView(APIView):
             logger.error(f"Failed to retrieve audit log: {str(e)}", exc_info=True)
             return Response(
                 {"error": "Failed to retrieve audit log"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class DailyStatsView(APIView):
+    """Get daily statistics for a specific date. Admin/Owner only."""
+
+    permission_classes = [IsAuthenticated, IsOrganizationAdminOrOwner]
+
+    def get(self, request):
+        from datetime import datetime
+
+        date_str = request.query_params.get("date")
+        if not date_str:
+            return Response(
+                {"error": "Date parameter is required (format: YYYY-MM-DD)"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            stats = DailyStats.objects.filter(date=target_date).first()
+            if not stats:
+                stats = DailyStats.objects.create(
+                    date=target_date,
+                    tasks_created=0,
+                )
+
+            serializer = DailyStatsSerializer(stats)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve daily stats: {str(e)}", exc_info=True)
+            return Response(
+                {"error": "Failed to retrieve daily stats"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

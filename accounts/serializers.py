@@ -97,13 +97,17 @@ class UserListSerializer(serializers.ModelSerializer):
         fields = [
             "user_id",
             "email",
-            "full_name",
             "first_name",
             "last_name",
+            "full_name",
             "is_active",
             "is_restricted",
             "is_admin",
+            "is_org_owner",
+            "is_staff",
+            "is_superuser",
             "date_joined",
+            "last_login",
         ]
         read_only_fields = [
             "user_id",
@@ -115,7 +119,6 @@ class UserListSerializer(serializers.ModelSerializer):
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """
-    Detailed user serializer for admin/owner.
     Includes more information but still excludes sensitive fields.
     """
 
@@ -170,7 +173,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
 class CreateUserSerializer(serializers.ModelSerializer):
     """
     Serializer for creating new users.
-    Only admin/owner can create users.
     Password is write-only and not exposed in responses.
     """
 
@@ -210,7 +212,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         ]
 
     def validate_email(self, value):
-        """Normalize and validate email."""
+        """validate email."""
         if not value:
             raise serializers.ValidationError("Email is required.")
         return value.lower().strip()

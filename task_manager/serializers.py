@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Task, Board, ScheduledTask, AuditLog
+from .models import Task, Board, ScheduledTask, AuditLog, DailyStats
 
 User = get_user_model()
 
@@ -445,9 +445,6 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
     audit_log_id = serializers.UUIDField(read_only=True)
     user_name = serializers.CharField(source="user.full_name", read_only=True)
-    action_type_display = serializers.CharField(
-        source="get_action_type_display", read_only=True
-    )
 
     class Meta:
         model = AuditLog
@@ -456,7 +453,6 @@ class AuditLogSerializer(serializers.ModelSerializer):
             "user",
             "user_name",
             "action_type",
-            "action_type_display",
             "description",
             "metadata",
             "ip_address",
@@ -468,10 +464,26 @@ class AuditLogSerializer(serializers.ModelSerializer):
             "user",
             "user_name",
             "action_type",
-            "action_type_display",
             "description",
             "metadata",
             "ip_address",
             "user_agent",
             "created_at",
+        ]
+
+
+class DailyStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyStats
+        fields = [
+            "daily_stats_id",
+            "date",
+            "tasks_created",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "daily_stats_id",
+            "created_at",
+            "updated_at",
         ]
