@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.pagination import PageNumberPagination
+from config.pagination import StandardPageNumberPagination
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -168,10 +168,7 @@ class UserListView(APIView):
             )
 
             # Apply pagination
-            paginator = PageNumberPagination()
-            paginator.page_size = 20
-            paginator.page_size_query_param = "page_size"
-            paginator.max_page_size = 100
+            paginator = StandardPageNumberPagination()
 
             paginated_users = paginator.paginate_queryset(users, request)
             serializer = UserListSerializer(paginated_users, many=True)

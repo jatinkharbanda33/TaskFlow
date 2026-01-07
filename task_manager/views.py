@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.pagination import PageNumberPagination
+from config.pagination import StandardPageNumberPagination
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
@@ -36,10 +36,7 @@ class BoardListView(APIView):
             boards = Board.objects.all().order_by("name")
 
             # Apply pagination
-            paginator = PageNumberPagination()
-            paginator.page_size = 20
-            paginator.page_size_query_param = "page_size"
-            paginator.max_page_size = 100
+            paginator = StandardPageNumberPagination()
 
             paginated_boards = paginator.paginate_queryset(boards, request)
             serializer = BoardListSerializer(paginated_boards, many=True)
@@ -234,10 +231,7 @@ class TaskListView(APIView):
             queryset = queryset.order_by("-created_at")
 
             # Apply pagination
-            paginator = PageNumberPagination()
-            paginator.page_size = 20
-            paginator.page_size_query_param = "page_size"
-            paginator.max_page_size = 100
+            paginator = StandardPageNumberPagination()
 
             paginated_tasks = paginator.paginate_queryset(queryset, request)
             serializer = TaskListSerializer(paginated_tasks, many=True)
@@ -449,10 +443,7 @@ class ScheduledTaskListView(APIView):
                     pass
 
             # Apply pagination
-            paginator = PageNumberPagination()
-            paginator.page_size = 20
-            paginator.page_size_query_param = "page_size"
-            paginator.max_page_size = 100
+            paginator = StandardPageNumberPagination()
 
             paginated_tasks = paginator.paginate_queryset(queryset, request)
             serializer = ScheduledTaskListSerializer(paginated_tasks, many=True)
@@ -566,10 +557,7 @@ class AuditLogListView(APIView):
             queryset = queryset.order_by("-created_at")
 
             # Apply pagination
-            paginator = PageNumberPagination()
-            paginator.page_size = 20
-            paginator.page_size_query_param = "page_size"
-            paginator.max_page_size = 100
+            paginator = StandardPageNumberPagination()
 
             paginated_logs = paginator.paginate_queryset(queryset, request)
             serializer = AuditLogSerializer(paginated_logs, many=True)

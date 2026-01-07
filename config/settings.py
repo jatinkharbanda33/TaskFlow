@@ -114,7 +114,7 @@ DATABASES = {
         "CONN_MAX_AGE": 0,
         "OPTIONS": {
             "options": f"-c timezone={os.getenv('DATABASE_TIMEZONE', 'Asia/Kolkata')}",
-        },
+        }, 
     }
 }
 

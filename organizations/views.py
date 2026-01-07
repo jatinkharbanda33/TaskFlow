@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.pagination import PageNumberPagination
+from config.pagination import StandardPageNumberPagination
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -39,10 +39,7 @@ class SubscriptionPlanListView(APIView):
             plans = SubscriptionPlan.objects.all().order_by("-created_at")
 
             # Apply pagination
-            paginator = PageNumberPagination()
-            paginator.page_size = 20
-            paginator.page_size_query_param = "page_size"
-            paginator.max_page_size = 100
+            paginator = StandardPageNumberPagination()
 
             paginated_plans = paginator.paginate_queryset(plans, request)
             serializer = SubscriptionPlanListSerializer(paginated_plans, many=True)
@@ -132,7 +129,7 @@ class OrganizationCreateView(APIView):
                 domain_name = generate_domain_name(
                     data["business_name"], settings.BASE_DOMAIN
                 )
-                
+
                 organization = Organization.objects.create(
                     business_name=data["business_name"],
                     owner_email=data["owner_email"],
@@ -141,16 +138,16 @@ class OrganizationCreateView(APIView):
                     contact_number=data.get("contact_number", ""),
                     email_domain=data["email_domain"].lower().strip(),
                     subscription=subscription,
-                    schema_name=schema_name,  
+                    schema_name=schema_name,
                     is_active=True,
                 )
-               
+
                 Domain.objects.create(
                     domain=domain_name,
                     tenant=organization,
                     is_primary=True,
                 )
-               
+
                 owner_email = data["owner_email"].lower().strip()
                 try:
                     User.objects.create_user(
