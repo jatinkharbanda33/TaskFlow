@@ -3,7 +3,7 @@ django-tenants
 djangorestframework
 djangorestframework-simplejwt
 psycopg2-binary
-django-crontab
 uuid
 python-dotenv
 python-dateutil
+django-q2

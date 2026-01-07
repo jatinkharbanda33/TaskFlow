@@ -3,11 +3,12 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 from config.pagination import StandardPageNumberPagination
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from .models import Task, Board, ScheduledTask, AuditLog, DailyStats
+from .models import Task, Board, AuditLog, DailyStats
 from .serializers import (
     BoardSerializer,
     BoardListSerializer,
@@ -15,13 +16,12 @@ from .serializers import (
     TaskSerializer,
     TaskListSerializer,
     TaskDetailSerializer,
-    ScheduledTaskSerializer,
-    ScheduledTaskListSerializer,
     AuditLogSerializer,
     DailyStatsSerializer,
 )
 from accounts.permissions import IsOrganizationAdminOrOwner
 from .utils.helpers import create_audit_log, increment_daily_stat
+from notifications.services import queue_task_created_notification
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,15 @@ class BoardListView(APIView):
 
     def get(self, request):
         try:
-            boards = Board.objects.all().order_by("name")
+            boards = Board.objects.all()
+
+            # Search by name if provided
+            name = request.query_params.get("name", "").strip()
+            if name:
+                boards = boards.filter(name__icontains=name)
+
+            # Order by name
+            boards = boards.order_by("name")
 
             # Apply pagination
             paginator = StandardPageNumberPagination()
@@ -42,6 +50,9 @@ class BoardListView(APIView):
             serializer = BoardListSerializer(paginated_boards, many=True)
 
             return paginator.get_paginated_response(serializer.data)
+        except NotFound:
+            # Invalid page number - return 404
+            raise
         except Exception as e:
             logger.error(f"Failed to retrieve boards: {str(e)}", exc_info=True)
             return Response(
@@ -214,6 +225,11 @@ class TaskListView(APIView):
                         status=status.HTTP_404_NOT_FOUND,
                     )
 
+            # Search by title if provided
+            title = request.query_params.get("title", "").strip()
+            if title:
+                queryset = queryset.filter(title__icontains=title)
+
             # Filter by status if provided
             status_filter = request.query_params.get("status")
             if status_filter:
@@ -237,6 +253,9 @@ class TaskListView(APIView):
             serializer = TaskListSerializer(paginated_tasks, many=True)
 
             return paginator.get_paginated_response(serializer.data)
+        except NotFound:
+            # Invalid page number - return 404
+            raise
         except Exception as e:
             logger.error(f"Failed to retrieve tasks: {str(e)}", exc_info=True)
             return Response(
@@ -271,6 +290,17 @@ class TaskCreateView(APIView):
                         },
                     )
                     increment_daily_stat("tasks_created")
+
+                # Queue notification to assigned user if exists
+                organization = getattr(request, "tenant", None)
+                if organization and task.assigned_to:
+                    queue_task_created_notification(
+                        task_id=str(task.task_id),
+                        task_title=task.title,
+                        assigned_email=task.assigned_to.email,
+                        organization_schema=organization.schema_name,
+                    )
+
                 response_serializer = TaskDetailSerializer(task)
                 return Response(
                     response_serializer.data, status=status.HTTP_201_CREATED
@@ -417,122 +447,6 @@ class TaskDetailView(APIView):
             )
 
 
-class ScheduledTaskListView(APIView):
-    """List scheduled tasks. Authenticated users can view their own."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            # Users can only see their own scheduled tasks
-            queryset = ScheduledTask.objects.filter(created_by=request.user).order_by(
-                "scheduled_time", "-created_at"
-            )
-
-            # Filter by processing_status if provided
-            processing_status = request.query_params.get("processing_status")
-            if processing_status:
-                try:
-                    processing_status = int(processing_status)
-                    valid_statuses = [
-                        choice[0] for choice in ScheduledTask.ProcessingStatus.choices
-                    ]
-                    if processing_status in valid_statuses:
-                        queryset = queryset.filter(processing_status=processing_status)
-                except ValueError:
-                    pass
-
-            # Apply pagination
-            paginator = StandardPageNumberPagination()
-
-            paginated_tasks = paginator.paginate_queryset(queryset, request)
-            serializer = ScheduledTaskListSerializer(paginated_tasks, many=True)
-
-            return paginator.get_paginated_response(serializer.data)
-        except Exception as e:
-            logger.error(f"Failed to retrieve scheduled tasks: {str(e)}", exc_info=True)
-            return Response(
-                {"error": "Failed to retrieve scheduled tasks"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-class ScheduledTaskCreateView(APIView):
-    """Create a new scheduled task. Authenticated users can create."""
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        try:
-            serializer = ScheduledTaskSerializer(
-                data=request.data, context={"request": request}
-            )
-            if serializer.is_valid():
-                with transaction.atomic():
-                    scheduled_task = serializer.save()
-                    create_audit_log(
-                        user=request.user,
-                        action_type=AuditLog.ActionType.SCHEDULED_TASK_CREATED,
-                        description=f"Scheduled task '{scheduled_task.title}' created",
-                        request=request,
-                        metadata={
-                            "scheduled_task_id": str(scheduled_task.scheduled_task_id),
-                            "task_title": scheduled_task.title,
-                            "scheduled_time": scheduled_task.scheduled_time.isoformat(),
-                            "recurrence_pattern": scheduled_task.recurrence_pattern,
-                        },
-                    )
-                response_serializer = ScheduledTaskSerializer(scheduled_task)
-                return Response(
-                    response_serializer.data, status=status.HTTP_201_CREATED
-                )
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except ValidationError as e:
-            return Response(
-                {"error": "Validation error", "detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception as e:
-            logger.error(f"Failed to create scheduled task: {str(e)}", exc_info=True)
-            return Response(
-                {"error": "Failed to create scheduled task"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
-class ScheduledTaskDetailView(APIView):
-    """Get a scheduled task. Authenticated users can view their own."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, scheduled_task_id):
-        try:
-            scheduled_task = ScheduledTask.objects.get(
-                scheduled_task_id=scheduled_task_id
-            )
-
-            # Users can only view their own scheduled tasks
-            if scheduled_task.created_by != request.user:
-                return Response(
-                    {"error": "You can only view your own scheduled tasks"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            serializer = ScheduledTaskSerializer(scheduled_task)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except ScheduledTask.DoesNotExist:
-            return Response(
-                {"error": "Scheduled task not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except Exception as e:
-            logger.error(f"Failed to retrieve scheduled task: {str(e)}", exc_info=True)
-            return Response(
-                {"error": "Failed to retrieve scheduled task"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-
 class AuditLogListView(APIView):
     """List audit logs. Admin/Owner only."""
 
@@ -563,6 +477,9 @@ class AuditLogListView(APIView):
             serializer = AuditLogSerializer(paginated_logs, many=True)
 
             return paginator.get_paginated_response(serializer.data)
+        except NotFound:
+            # Invalid page number - return 404
+            raise
         except Exception as e:
             logger.error(f"Failed to retrieve audit logs: {str(e)}", exc_info=True)
             return Response(

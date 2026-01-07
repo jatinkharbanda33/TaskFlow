@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import NotFound
 from config.pagination import StandardPageNumberPagination
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
@@ -45,6 +46,9 @@ class SubscriptionPlanListView(APIView):
             serializer = SubscriptionPlanListSerializer(paginated_plans, many=True)
 
             return paginator.get_paginated_response(serializer.data)
+        except NotFound:
+            # Invalid page number - return 404
+            raise
         except Exception as e:
             logger.error(
                 f"Failed to retrieve subscription plans: {str(e)}", exc_info=True
@@ -108,11 +112,9 @@ class OrganizationCreateView(APIView):
                     )
 
                 # Calculate next_payment_date if not provided
-                next_payment_date = data.get("next_payment_date")
-                if not next_payment_date:
-                    next_payment_date = calculate_next_payment_date(
-                        billing_cycle=data["billing_cycle"]
-                    )
+                next_payment_date = calculate_next_payment_date(
+                    billing_cycle=data["billing_cycle"]
+                )
 
                 # Create subscription
                 subscription = Subscription.objects.create(
@@ -194,7 +196,7 @@ class OrganizationDetailView(APIView):
 
     def get(self, request):
         try:
-            organization = request.organization
+            organization = getattr(request, "tenant", None)
             if not organization:
                 return Response(
                     {"error": "Organization not found"},
@@ -223,7 +225,7 @@ class OrganizationDetailView(APIView):
             )
 
         try:
-            organization = request.organization
+            organization = getattr(request, "tenant", None)
             if not organization:
                 return Response(
                     {"error": "Organization not found"},
@@ -265,7 +267,7 @@ class OrganizationSubscriptionView(APIView):
     def get(self, request):
         """Get current subscription details."""
         try:
-            organization = request.organization
+            organization = getattr(request, "tenant", None)
             if not organization or not organization.subscription:
                 return Response(
                     {"error": "No subscription found"},
@@ -295,7 +297,7 @@ class OrganizationSubscriptionView(APIView):
             )
 
         try:
-            organization = request.organization
+            organization = getattr(request, "tenant", None)
             if not organization or not organization.subscription:
                 return Response(
                     {"error": "No subscription found"},
@@ -359,7 +361,7 @@ class OrganizationSubscriptionStatusView(APIView):
 
     def get(self, request):
         try:
-            organization = request.organization
+            organization = getattr(request, "tenant", None)
             if not organization:
                 return Response(
                     {"error": "Organization not found"},

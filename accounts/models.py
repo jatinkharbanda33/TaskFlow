@@ -38,8 +38,8 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     )
 
     # Access Control
-    is_active = models.BooleanField(default=True, help_text="Can login?")
-    is_restricted = models.BooleanField(default=False, help_text="Read-only mode?")
+    is_active = models.BooleanField(default=True, help_text="True is user left the organization")
+    is_restricted = models.BooleanField(default=False, help_text=" True if user is flagged for some illegal activity")
 
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now=True)
@@ -53,7 +53,6 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
         indexes = [
             models.Index(fields=["organization", "email"]),
             models.Index(fields=["organization", "is_active"]),
-            models.Index(fields=["email"]),
         ]
 
     def __str__(self):

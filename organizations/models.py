@@ -70,7 +70,7 @@ class Subscription(models.Model):
         ordering = ["-started_at"]
         indexes = [
             models.Index(fields=["is_active", "end_date"]),
-            models.Index(fields=["billing_cycle", "is_active"]),
+            models.Index(fields=["is_active", "billing_cycle"]),
         ]
 
     def __str__(self):

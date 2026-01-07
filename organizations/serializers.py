@@ -200,6 +200,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
     organization_id = serializers.UUIDField(read_only=True)
     subscription = SubscriptionSerializer(read_only=True)
     owner_email = serializers.EmailField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
 
@@ -222,6 +223,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "organization_id",
             "owner_email",
             "subscription",
+            "is_active",
             "created_at",
             "updated_at",
         ]
@@ -259,6 +261,7 @@ class OrganizationListSerializer(serializers.ModelSerializer):
     """
 
     organization_id = serializers.UUIDField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
     subscription_plan_name = serializers.CharField(
         source="subscription.subscription_plan.display_name", read_only=True
     )
@@ -274,6 +277,7 @@ class OrganizationListSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "organization_id",
+            "is_active",
             "created_at",
             "subscription_plan_name",
         ]

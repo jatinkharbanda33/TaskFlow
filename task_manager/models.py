@@ -7,7 +7,7 @@ import uuid
 class Task(models.Model):
     """
     Task model for managing tasks within a tenant.
-    Each task belongs to a user and can be assigned to multiple users.
+    Each task belongs to a user and can be assigned to one user.
     """
 
     class Status(models.TextChoices):
@@ -55,16 +55,20 @@ class Task(models.Model):
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="created_tasks",
+        null=True,
         db_index=True,
         help_text="User who created this task",
     )
-    assigned_to = models.ManyToManyField(
+    assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        related_name="assigned_tasks",
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        help_text="Users assigned to this task",
+        related_name="assigned_tasks",
+        db_index=True,
+        help_text="User assigned to this task",
     )
 
     # Dates
@@ -84,10 +88,11 @@ class Task(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["board", "status", "-created_at"]),
+            models.Index(fields=["board", "status", "-created_at"]), #for checking tasks in board with filters
             models.Index(fields=["priority", "due_date"]),
-            models.Index(fields=["created_by", "status"]),
+            models.Index(fields=["created_by", "status"]), # for user to check the tasks they have created
             models.Index(fields=["status", "priority"]),
+            models.Index(fields=["assigned_to", "status", "priority"]), # For user to check their own tasks
         ]
 
     def __str__(self):
@@ -112,119 +117,6 @@ class Task(models.Model):
         return False
 
 
-class ScheduledTask(models.Model):
-    """
-    Scheduled Task model for tasks that need to be created in the future.
-    Used by background workers to process scheduled tasks.
-    """
-
-    class Status(models.TextChoices):
-        PENDING = "PENDING", "Pending"
-        IN_PROGRESS = "IN_PROGRESS", "In Progress"
-        COMPLETED = "COMPLETED", "Completed"
-
-    class ProcessingStatus(models.IntegerChoices):
-        PENDING = 0, "Pending"
-        PROCESSED = 1, "Processed"
-        FAILED = 2, "Failed"
-
-    # Core Fields
-    title = models.CharField(
-        max_length=255, db_index=True, help_text="Scheduled task title"
-    )
-    description = models.TextField(help_text="Task description")
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING,
-        db_index=True,
-        help_text="Task status",
-    )
-
-    # Relationships
-    board = models.ForeignKey(
-        "Board",
-        on_delete=models.CASCADE,
-        related_name="scheduled_tasks",
-        db_index=True,
-        null=True,
-        blank=True,
-        help_text="Board this scheduled task will create tasks in",
-    )
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="scheduled_tasks",
-        db_index=True,
-        help_text="User who created this scheduled task",
-    )
-    assigned_to = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="assigned_scheduled_tasks",
-        blank=True,
-        help_text="Users who will be assigned to tasks created from this scheduled task",
-    )
-
-    # Task Fields (used when creating Task from ScheduledTask)
-    class Priority(models.TextChoices):
-        LOW = "LOW", "Low"
-        MEDIUM = "MEDIUM", "Medium"
-        HIGH = "HIGH", "High"
-        URGENT = "URGENT", "Urgent"
-
-    priority = models.CharField(
-        max_length=10,
-        choices=Priority.choices,
-        default=Priority.MEDIUM,
-        db_index=True,
-        help_text="Priority for tasks created from this scheduled task",
-    )
-    due_date = models.DateTimeField(
-        null=True,
-        blank=True,
-        db_index=True,
-        help_text="Due date for tasks created from this scheduled task",
-    )
-
-    # Scheduling
-    scheduled_time = models.DateTimeField(
-        db_index=True, help_text="When this task should be processed"
-    )
-
-    # Processing
-    processing_status = models.IntegerField(
-        choices=ProcessingStatus.choices,
-        default=ProcessingStatus.PENDING,
-        db_index=True,
-        help_text="Processing status for background worker",
-    )
-    failure_reason = models.TextField(
-        null=True, blank=True, help_text="Reason if processing failed"
-    )
-
-    # Metadata
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        db_index=True,
-        help_text="When the scheduled task was created",
-    )
-    processed_at = models.DateTimeField(
-        null=True, blank=True, help_text="When the task was processed"
-    )
-
-    class Meta:
-        ordering = ["scheduled_time", "-created_at"]
-        indexes = [
-            models.Index(fields=["processing_status", "scheduled_time"]),
-            models.Index(fields=["scheduled_time", "processing_status"]),
-            models.Index(fields=["created_by", "scheduled_time"]),
-            models.Index(fields=["board", "scheduled_time"]),
-        ]
-
-    def __str__(self):
-        return f"{self.title} - {self.get_processing_status_display()}"
-
-
 class Board(models.Model):
     """
     Board model for organizing tasks within a tenant.
@@ -242,9 +134,9 @@ class Board(models.Model):
     # Relationships
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name="created_boards",
-        db_index=True,
         help_text="User who created this board",
     )
 
@@ -258,9 +150,6 @@ class Board(models.Model):
 
     class Meta:
         ordering = ["name"]
-        indexes = [
-            models.Index(fields=["created_by", "created_at"]),
-        ]
 
     def __str__(self):
         return self.name
@@ -281,7 +170,6 @@ class AuditLog(models.Model):
         BOARD_CREATED = "BOARD_CREATED", "Board Created"
         BOARD_UPDATED = "BOARD_UPDATED", "Board Updated"
         BOARD_DELETED = "BOARD_DELETED", "Board Deleted"
-        SCHEDULED_TASK_CREATED = "SCHEDULED_TASK_CREATED", "Scheduled Task Created"
 
     audit_log_id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False, db_index=True
@@ -326,9 +214,8 @@ class AuditLog(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["action_type", "-created_at"]),
+            models.Index(fields=["action_type", "-created_at"]), # For filtering
             models.Index(fields=["user", "-created_at"]),
-            models.Index(fields=["-created_at"]),
         ]
 
     def __str__(self):
@@ -356,9 +243,6 @@ class DailyStats(models.Model):
 
     class Meta:
         ordering = ["-date"]
-        indexes = [
-            models.Index(fields=["date"]),
-        ]
 
     def __str__(self):
         return f"Daily Stats - {self.date}"

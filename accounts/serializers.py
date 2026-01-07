@@ -14,6 +14,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
 
+        if not self.user.is_active:
+            raise serializers.ValidationError("Your account is closed")
         # Check restricted status immediately on login
         if self.user.is_restricted:
             raise serializers.ValidationError(
@@ -100,20 +102,11 @@ class UserListSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "full_name",
-            "is_active",
-            "is_restricted",
-            "is_admin",
-            "is_org_owner",
-            "is_staff",
-            "is_superuser",
-            "date_joined",
-            "last_login",
         ]
         read_only_fields = [
             "user_id",
             "email",
             "full_name",
-            "date_joined",
         ]
 
 
@@ -127,7 +120,11 @@ class UserDetailSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
     last_login = serializers.DateTimeField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    is_restricted = serializers.BooleanField(read_only=True)
+    is_admin = serializers.BooleanField(read_only=True)
     is_org_owner = serializers.BooleanField(read_only=True)
+    is_staff = serializers.BooleanField(read_only=True)
     is_superuser = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -151,7 +148,11 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "user_id",
             "email",
             "full_name",
+            "is_active",
+            "is_restricted",
+            "is_admin",
             "is_org_owner",
+            "is_staff",
             "is_superuser",
             "date_joined",
             "last_login",
@@ -181,6 +182,10 @@ class CreateUserSerializer(serializers.ModelSerializer):
         write_only=True, required=True, min_length=8, style={"input_type": "password"}
     )
     email = serializers.EmailField(required=True)
+    is_active = serializers.BooleanField(read_only=True)
+    is_restricted = serializers.BooleanField(read_only=True)
+    is_admin = serializers.BooleanField(read_only=True)
+    is_staff = serializers.BooleanField(read_only=True)
     is_org_owner = serializers.BooleanField(read_only=True)
     is_superuser = serializers.BooleanField(read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
@@ -205,6 +210,10 @@ class CreateUserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "user_id",
+            "is_active",
+            "is_restricted",
+            "is_admin",
+            "is_staff",
             "is_org_owner",
             "is_superuser",
             "date_joined",

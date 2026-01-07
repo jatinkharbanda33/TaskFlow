@@ -26,16 +26,21 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv(
-    "ALLOWED_HOSTS", ".localhost.com,localhost.com,localhost,127.0.0.1"
+    "ALLOWED_HOSTS", ".localhost.com,localhost.com,.localhost,localhost,127.0.0.1"
 ).split(",")
+# Ensure .localhost is included for subdomain support (e.g., abc.localhost)
+if ".localhost" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(".localhost")
 
 # Basic Security Settings
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Request Size Limits
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(
+    os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", "10485760")
+)  # 10 MB default
+DATA_UPLOAD_MAX_NUMBER_FIELDS = int(os.getenv("DATA_UPLOAD_MAX_NUMBER_FIELDS", "1000"))
 
 
 SHARED_APPS = (
@@ -50,7 +55,8 @@ SHARED_APPS = (
     "django.contrib.auth",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
-    "django_crontab",
+    "django_q",
+    "notifications",
 )
 
 TENANT_APPS = (
@@ -75,7 +81,6 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "accounts.middleware.UserOrganizationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -109,12 +114,12 @@ DATABASES = {
         "NAME": os.getenv("DATABASE_NAME"),
         "USER": os.getenv("DATABASE_USER"),
         "PASSWORD": os.getenv("DATABASE_PASSWORD"),
-        "HOST": os.getenv("DATABASE_HOST", "localhost"),
-        "PORT": os.getenv("DATABASE_PORT", "5432"),
+        "HOST": os.getenv("DATABASE_HOST"),
+        "PORT": int(os.getenv("DATABASE_PORT", "5432")),
         "CONN_MAX_AGE": 0,
         "OPTIONS": {
-            "options": f"-c timezone={os.getenv('DATABASE_TIMEZONE', 'Asia/Kolkata')}",
-        }, 
+            "options": f"-c timezone={os.getenv('DATABASE_TIMEZONE')}",
+        },
     }
 }
 
@@ -141,7 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = os.getenv("TIME_ZONE", "Asia/Kolkata")
+TIME_ZONE = os.getenv("TIME_ZONE")
 
 USE_I18N = True
 
@@ -196,20 +201,24 @@ Examples:
 - Staging: "staging.app.com"
 """
 
-CRONJOBS = [
-    (
-        "*/2 * * * *",
-        "django.core.management.call_command",
-        ["process_tasks"],
-        {},
-        ">> /app/cron.log 2>&1",
-    ),
-]
-
 # Logging Configuration
 # Create logs directory if it doesn't exist
 LOGS_DIR = BASE_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
+
+# Django Q2 Configuration
+Q_CLUSTER = {
+    "name": os.getenv("Q_CLUSTER_NAME", "TaskFlow"),
+    "workers": int(os.getenv("Q_WORKERS", "2")),
+    "recycle": int(os.getenv("Q_RECYCLE", "500")),
+    "timeout": int(os.getenv("Q_TIMEOUT", "60")),
+    "retry": int(os.getenv("Q_RETRY", "120")),
+    "queue_limit": int(os.getenv("Q_QUEUE_LIMIT", "50")),
+    "bulk": int(os.getenv("Q_BULK", "10")),
+    "orm": os.getenv("Q_ORM", "default"),  # Use database as broker
+    "catch_up": os.getenv("Q_CATCH_UP", "False").lower() == "true",
+    "max_attempts": int(os.getenv("Q_MAX_ATTEMPTS", "3")),
+}
 
 LOGGING = {
     "version": 1,

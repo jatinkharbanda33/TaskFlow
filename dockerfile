@@ -16,7 +16,4 @@ COPY . /app/
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-COPY run_cron.sh /run_cron.sh
-RUN chmod +x /run_cron.sh
-
 CMD ["/start.sh"]

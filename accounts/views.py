@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import NotFound
 from config.pagination import StandardPageNumberPagination
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
@@ -150,12 +151,12 @@ class UserProfileView(APIView):
 class UserListView(APIView):
     """List all users in the organization. Admin/Owner can view."""
 
-    permission_classes = [IsAuthenticated, IsOrganizationAdminOrOwner]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         try:
             # Get organization from request
-            organization = getattr(request, "organization", None)
+            organization = getattr(request, "tenant", None)
             if not organization:
                 return Response(
                     {"error": "Organization context not available"},
@@ -163,9 +164,15 @@ class UserListView(APIView):
                 )
 
             # Filter users by organization
-            users = User.objects.filter(organization=organization).order_by(
-                "-date_joined"
-            )
+            users = User.objects.filter(organization=organization)
+
+            # Search by first_name if provided
+            first_name = request.query_params.get("first_name", "").strip()
+            if first_name:
+                users = users.filter(first_name__icontains=first_name)
+
+            # Order by date joined
+            users = users.order_by("-date_joined")
 
             # Apply pagination
             paginator = StandardPageNumberPagination()
@@ -174,6 +181,12 @@ class UserListView(APIView):
             serializer = UserListSerializer(paginated_users, many=True)
 
             return paginator.get_paginated_response(serializer.data)
+        except NotFound:
+            # Invalid page number - return 404 with helpful message
+            return Response(
+                {"error": "Invalid page number. Please check your query parameters."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         except Exception as e:
             logger.error(f"Failed to retrieve users: {str(e)}", exc_info=True)
             return Response(
@@ -185,12 +198,12 @@ class UserListView(APIView):
 class UserDetailView(APIView):
     """Get or update specific user. Admin/Owner can access any, user can access own."""
 
-    permission_classes = [IsAuthenticated, IsOrganizationAdminOrOwner]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
         try:
             # Get organization from request
-            organization = getattr(request, "organization", None)
+            organization = getattr(request, "tenant", None)
             if not organization:
                 return Response(
                     {"error": "Organization context not available"},
@@ -241,7 +254,7 @@ class UserDetailView(APIView):
 
         try:
             # Get organization from request
-            organization = getattr(request, "organization", None)
+            organization = getattr(request, "tenant", None)
             if not organization:
                 return Response(
                     {"error": "Organization context not available"},
@@ -290,7 +303,7 @@ class UserCreateView(APIView):
     def post(self, request):
         try:
             # Get organization from request (set by django-tenants middleware)
-            organization = getattr(request, "organization", None)
+            organization = getattr(request, "tenant", None)
             if not organization:
                 return Response(
                     {"error": "Organization context not available"},
