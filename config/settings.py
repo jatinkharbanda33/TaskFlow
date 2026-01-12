@@ -201,6 +201,48 @@ Examples:
 - Staging: "staging.app.com"
 """
 
+# AWS S3 Configuration
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
+AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN")
+
+# CloudFront Configuration (for serving files via CDN)
+AWS_CLOUDFRONT_DOMAIN = os.getenv(
+    "AWS_CLOUDFRONT_DOMAIN", ""
+)  # e.g., d1234567890.cloudfront.net
+USE_CLOUDFRONT = os.getenv("USE_CLOUDFRONT", "False").lower() == "true"
+
+# S3 File Access Configuration
+AWS_DEFAULT_ACL = os.getenv("AWS_DEFAULT_ACL")  # Keep files private
+AWS_S3_FILE_OVERWRITE = os.getenv(
+    "AWS_S3_FILE_OVERWRITE"
+)  # Don't overwrite files with same name
+
+# Presigned URL Configuration (for uploads only)
+AWS_PRESIGNED_URL_EXPIRATION = int(os.getenv("AWS_PRESIGNED_URL_EXPIRATION"))  # 1 hour
+
+# File Upload Limits
+MAX_UPLOAD_SIZE = int(os.getenv("MAX_UPLOAD_SIZE"))
+
+# Allowed file types: Images, Text, PDF, Word documents
+ALLOWED_FILE_TYPES = [
+    # Images
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    # PDF
+    "application/pdf",
+    # Word Documents
+    "application/msword",  # .doc
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
+    # Text files
+    "text/plain",  # .txt
+]
+
 # Logging Configuration
 # Create logs directory if it doesn't exist
 LOGS_DIR = BASE_DIR / "logs"

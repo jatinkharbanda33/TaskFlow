@@ -7,3 +7,6 @@ uuid
 python-dotenv
 python-dateutil
 django-q2
+boto3
+django-storages[s3]
+Pillow
