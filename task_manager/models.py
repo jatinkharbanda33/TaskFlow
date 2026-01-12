@@ -88,11 +88,17 @@ class Task(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["board", "status", "-created_at"]), #for checking tasks in board with filters
+            models.Index(
+                fields=["board", "status", "-created_at"]
+            ),  # for checking tasks in board with filters
             models.Index(fields=["priority", "due_date"]),
-            models.Index(fields=["created_by", "status"]), # for user to check the tasks they have created
+            models.Index(
+                fields=["created_by", "status"]
+            ),  # for user to check the tasks they have created
             models.Index(fields=["status", "priority"]),
-            models.Index(fields=["assigned_to", "status", "priority"]), # For user to check their own tasks
+            models.Index(
+                fields=["assigned_to", "status", "priority"]
+            ),  # For user to check their own tasks
         ]
 
     def __str__(self):
@@ -214,7 +220,7 @@ class AuditLog(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["action_type", "-created_at"]), # For filtering
+            models.Index(fields=["action_type", "-created_at"]),  # For filtering
             models.Index(fields=["user", "-created_at"]),
         ]
 
@@ -246,3 +252,50 @@ class DailyStats(models.Model):
 
     def __str__(self):
         return f"Daily Stats - {self.date}"
+
+
+class TaskAttachment(models.Model):
+
+    attachment_id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, db_index=True
+    )
+
+    task = models.ForeignKey(
+        "Task",
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        db_index=True,
+        help_text="Task this attachment belongs to",
+    )
+
+    # File metadata
+    file_name = models.CharField(max_length=255, help_text="Original filename")
+    file_size = models.BigIntegerField(help_text="File size in bytes")
+    file_type = models.CharField(max_length=100, help_text="MIME type")
+
+    # S3 storage info
+    s3_key = models.CharField(
+        max_length=1024, unique=True, help_text="S3 object key/path"
+    )
+
+    # Upload metadata
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="uploaded_attachments",
+        help_text="User who uploaded this file",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True, db_index=True, help_text="When attachment was created"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["task", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.file_name} - {self.task.title}"

@@ -47,6 +47,10 @@ I use **Schema-Based Multi-Tenancy** via `django-tenants`. The public schema act
 3. `JWTAuthentication` validates JWT token, checks user belongs to organization
 4. View processes request in tenant schema context
 5. Results returned to client
+![Tenant Request Flow](assets/HomePage.png)
+![Tenant Request Flow](assets/data_isolation.png)
+![Tenant Request Flow](assets/AllBoards.png)
+![Tenant Request Flow](assets/BoardView.png)
 
 #### Key Components and Responsibilities
 
@@ -66,10 +70,11 @@ I use **Schema-Based Multi-Tenancy** via `django-tenants`. The public schema act
 #### Background Processing Approach
 
 I use Django-Q2 for asynchronous task processing. Workers run in a separate process, using the database as the message broker. Notifications are queued when tasks are created and processed asynchronously.
+![Tenant Request Flow](assets/NewTask.png)
 
 #### Rate Limiting or Quota Strategy
 
-- Anonymous users: 10 requests/minute (configurable)
+- Anonymous users: 20 requests/minute (configurable)
 - Authenticated users: 100 requests/minute (configurable)
 
 ---
